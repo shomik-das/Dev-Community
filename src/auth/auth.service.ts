@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class AuthService {
+    private userService: UserService;
+    constructor(userService: UserService) {
+        this.userService = userService;
+    }
     signup() {
         /* 
         * 1. chekc if the email already exists
@@ -12,6 +17,7 @@ export class AuthService {
         * 6. return the token
         * 
         */
+        return this.userService.createUser();
         return {
             message: 'sign up successfully',
             token: '1234567890'
