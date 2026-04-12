@@ -19,7 +19,8 @@ export class AuthService {
         * 6. return the token
         * 
         */
-        return this.userService.createUser({ ...signUpDto, password: hash });   
+        const newUser = await this.userService.createUser({ ...signUpDto, password: hash });   
+        return newUser;
     }
 
     login() {
