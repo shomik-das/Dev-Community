@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schema/user.schema';
 import { SignUpDto } from 'src/auth/dto/signUp.dto';
+import { Role } from 'src/auth/enums/role.enum';
 
 @Injectable()
 export class UserService {
@@ -14,7 +15,7 @@ export class UserService {
             name: signUpDto.name,
             email: signUpDto.email,
             password: signUpDto.password,
-            role: 'USER',
+            role: Role.USER,
         });
         return newUser;
     } 

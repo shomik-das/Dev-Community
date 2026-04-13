@@ -15,7 +15,7 @@ export class AuthService {
     async signup(signUpDto: SignUpDto) {
         const hash = await bcrypt.hash(signUpDto.password, 10);
         const newUser = await this.userService.createUser({ ...signUpDto, password: hash });
-        const payload = { id: newUser._id };
+        const payload = { id: newUser._id, role: newUser.role };
         const token = this.jwtService.sign(payload);
         return {
             message: 'user created successfully',
@@ -34,7 +34,7 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        const payload = { id: user._id };
+        const payload = { id: user._id, role: user.role };
         const token = this.jwtService.sign(payload);
 
         return {
