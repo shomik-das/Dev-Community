@@ -14,15 +14,6 @@ export class AuthService {
     }
     async signup(signUpDto: SignUpDto) {
         const hash = await bcrypt.hash(signUpDto.password, 10);
-        /* 
-        * 1. chekc if the email already exists
-        * 2. hash the pass
-        * 3. if not exists create a new user
-        * 4. store the new user in the database
-        * 5. generate a jwt token
-        * 6. return the token
-        * 
-        */
         const newUser = await this.userService.createUser({ ...signUpDto, password: hash });
         const payload = { id: newUser._id };
         const token = this.jwtService.sign(payload);
