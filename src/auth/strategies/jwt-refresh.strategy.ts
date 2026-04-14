@@ -1,10 +1,12 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+  private readonly logger = new Logger(JwtRefreshStrategy.name);
+
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -13,10 +15,11 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
       passReqToCallback: true,
     });
   }
- 
+  
   validate(req: Request, payload: any) {
     const refreshToken = req.get('Authorization')?.replace('Bearer', '').trim();
     if (!refreshToken) {
+      this.logger.warn('Refresh token missing from request');
       throw new UnauthorizedException();
     }
     return { ...payload, refreshToken };

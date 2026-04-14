@@ -17,12 +17,13 @@ export class UserService {
         role: Role.USER,
       });
       return newUser;
-    } 
-    catch (error) {
+    } catch (error) {
       const DUPLICATE_KEY_ERROR = 11000;
       if (error.code === DUPLICATE_KEY_ERROR) {
         const fieldName = Object.keys(error.keyValue)[0];
-        throw new ConflictException(`${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} already exists`);
+        throw new ConflictException(
+          `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} already exists`,
+        );
       }
       throw error;
     }
@@ -37,9 +38,11 @@ export class UserService {
   }
 
   async updateProfile(id: string, updateProfileDto: UpdateProfileDto) {
-    return await this.userModel.findByIdAndUpdate(id, updateProfileDto, {
-      new: true,
-    }).select('-password');
+    return await this.userModel
+      .findByIdAndUpdate(id, updateProfileDto, {
+        new: true,
+      })
+      .select('-password');
   }
 
   async updateRefreshToken(id: string, refreshToken: string | null) {
