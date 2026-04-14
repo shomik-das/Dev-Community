@@ -1,23 +1,22 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from './schema/user.schema';
-import { SignUpDto } from 'src/auth/dto/signUp.dto';
+import { User } from './schemas/user.schema';
 import { Role } from 'src/auth/enums/role.enum';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UserService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
-  async createUser(signUpDto: SignUpDto) {
-    try{
-        const newUser = await this.userModel.create({
-            name: signUpDto.name,
-            email: signUpDto.email,
-            password: signUpDto.password,
-            role: Role.USER,
-        });
-        return newUser;
+  async createUser(createUserDto: CreateUserDto) {
+    try {
+      const newUser = await this.userModel.create({
+        ...createUserDto,
+        role: Role.USER,
+      });
+      return newUser;
     } 
     catch (error) {
       const DUPLICATE_KEY_ERROR = 11000;
@@ -35,5 +34,15 @@ export class UserService {
 
   async findUserById(id: string) {
     return await this.userModel.findById(id).select('-password');
+  }
+
+  async updateProfile(id: string, updateProfileDto: UpdateProfileDto) {
+    return await this.userModel.findByIdAndUpdate(id, updateProfileDto, {
+      new: true,
+    }).select('-password');
+  }
+
+  async updateRefreshToken(id: string, refreshToken: string | null) {
+    await this.userModel.findByIdAndUpdate(id, { refreshToken });
   }
 }
