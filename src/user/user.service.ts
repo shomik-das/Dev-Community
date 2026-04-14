@@ -5,9 +5,11 @@ import { User } from './schemas/user.schema';
 import { Role } from 'src/auth/enums/role.enum';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
   async createUser(createUserDto: CreateUserDto) {
@@ -21,10 +23,12 @@ export class UserService {
       const DUPLICATE_KEY_ERROR = 11000;
       if (error.code === DUPLICATE_KEY_ERROR) {
         const fieldName = Object.keys(error.keyValue)[0];
+        this.logger.error(`Signup failed: Invalid credentials for email: ${createUserDto.email}`);
         throw new ConflictException(
           `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} already exists`,
         );
       }
+      this.logger.error(`Error creating user: ${error.message}`);
       throw error;
     }
   }
