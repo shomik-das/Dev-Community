@@ -30,11 +30,6 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  async getProfile(@Request() req) {
-    return await this.authService.getProfile(req.user.id);
-  }
 
   @UseGuards(JwtRefreshGuard)
   @Get('refresh')

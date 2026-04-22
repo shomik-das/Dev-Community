@@ -23,8 +23,6 @@ export class AuthService {
 
     const tokens = await this.getTokens(newUser._id.toString(), newUser.role);
     await this.updateRefreshToken(newUser._id.toString(), tokens.refreshToken);
-
-    this.logger.log(`User created successfully: ${newUser.email}`);
     return {
       message: 'user created successfully',
       ...tokens,
@@ -62,9 +60,6 @@ export class AuthService {
     await this.userService.updateRefreshToken(userId, null);
   }
 
-  async getProfile(userId: string) {
-    return await this.userService.findUserById(userId);
-  }
 
   async refreshTokens(userId: string, refreshToken: string) {
     const user = await this.userService.findUserById(userId);
