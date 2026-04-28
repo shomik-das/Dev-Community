@@ -39,4 +39,9 @@ export class UpdateProfileDto {
   @ValidateNested({ each: true })
   @Type(() => ExperienceDto)
   experiences?: ExperienceDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  skills?: string[];
 }

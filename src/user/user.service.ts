@@ -52,4 +52,46 @@ export class UserService {
   async updateRefreshToken(id: string, refreshToken: string | null) {
     await this.userModel.findByIdAndUpdate(id, { refreshToken });
   }
+
+  async addSkill(id: string, skill: string) {
+    return await this.userModel
+      .findByIdAndUpdate(id, { $addToSet: { skills: skill } }, { new: true })
+      .select('-password');
+  }
+
+  async removeSkill(id: string, skill: string) {
+    return await this.userModel
+      .findByIdAndUpdate(id, { $pull: { skills: skill } }, { new: true })
+      .select('-password');
+  }
+
+  async addExperience(id: string, experience: any) {
+    return await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { $push: { experiences: experience } },
+        { new: true },
+      )
+      .select('-password');
+  }
+
+  async updateExperience(userId: string, expId: string, experience: any) {
+    return await this.userModel
+      .findOneAndUpdate(
+        { _id: userId, 'experiences._id': expId },
+        { $set: { 'experiences.$': { ...experience, _id: expId } } },
+        { new: true },
+      )
+      .select('-password');
+  }
+
+  async removeExperience(userId: string, expId: string) {
+    return await this.userModel
+      .findByIdAndUpdate(
+        userId,
+        { $pull: { experiences: { _id: expId } } },
+        { new: true },
+      )
+      .select('-password');
+  }
 }

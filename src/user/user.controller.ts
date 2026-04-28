@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Body, Request, UseGuards, Param } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -16,5 +16,30 @@ export class UserController {
   @Patch('profile')
   async updateProfile(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
     return await this.userService.updateProfile(req.user.id, updateProfileDto);
+  }
+
+  @Post('skills')
+  async addSkill(@Request() req, @Body('skill') skill: string) {
+    return await this.userService.addSkill(req.user.id, skill);
+  }
+
+  @Delete('skills')
+  async removeSkill(@Request() req, @Body('skill') skill: string) {
+    return await this.userService.removeSkill(req.user.id, skill);
+  }
+
+  @Post('experiences')
+  async addExperience(@Request() req, @Body() experience: any) {
+    return await this.userService.addExperience(req.user.id, experience);
+  }
+
+  @Patch('experiences/:expId')
+  async updateExperience(@Request() req, @Param('expId') expId: string, @Body() experience: any) {
+    return await this.userService.updateExperience(req.user.id, expId, experience);
+  }
+
+  @Delete('experiences/:expId')
+  async removeExperience(@Request() req, @Param('expId') expId: string) {
+    return await this.userService.removeExperience(req.user.id, expId);
   }
 }

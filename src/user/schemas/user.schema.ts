@@ -38,6 +38,9 @@ export class User {
     current: boolean;
   }[];
 
+  @Prop([String])
+  skills: string[];
+
   @Prop()
   refreshToken: string;
 }
