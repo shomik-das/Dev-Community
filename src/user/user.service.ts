@@ -76,10 +76,15 @@ export class UserService {
   }
 
   async updateExperience(userId: string, expId: string, experience: any) {
+    const updateFields = {};
+    Object.keys(experience).forEach((key) => {
+      updateFields[`experiences.$.${key}`] = experience[key];
+    });
+
     return await this.userModel
       .findOneAndUpdate(
         { _id: userId, 'experiences._id': expId },
-        { $set: { 'experiences.$': { ...experience, _id: expId } } },
+        { $set: updateFields },
         { new: true },
       )
       .select('-password');
