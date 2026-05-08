@@ -5,6 +5,7 @@ import { User } from './schemas/user.schema';
 import { Role } from 'src/auth/enums/role.enum';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateExperienceDto, ExperienceDto } from './dto/update-experience.dto';
 import { Logger } from '@nestjs/common';
 
 @Injectable()
@@ -65,7 +66,7 @@ export class UserService {
       .select('-password');
   }
 
-  async addExperience(id: string, experience: any) {
+  async addExperience(id: string, experience: ExperienceDto) {
     return await this.userModel
       .findByIdAndUpdate(
         id,
@@ -75,10 +76,14 @@ export class UserService {
       .select('-password');
   }
 
-  async updateExperience(userId: string, expId: string, experience: any) {
+  async updateExperience(
+    userId: string,
+    expId: string,
+    updateExperienceDto: UpdateExperienceDto,
+  ) {
     const updateFields = {};
-    Object.keys(experience).forEach((key) => {
-      updateFields[`experiences.$.${key}`] = experience[key];
+    Object.keys(updateExperienceDto).forEach((key) => {
+      updateFields[`experiences.$.${key}`] = updateExperienceDto[key];
     });
 
     return await this.userModel

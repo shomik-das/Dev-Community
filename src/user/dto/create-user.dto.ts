@@ -1,30 +1,7 @@
-import { IsEmail, IsNotEmpty, IsString, IsOptional, IsEnum, IsArray, ValidateNested, IsBoolean, IsDateString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, IsOptional, IsEnum, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Role } from 'src/auth/enums/role.enum';
-
-class ExperienceDto {
-  @IsString()
-  @IsNotEmpty()
-  title: string;
-
-  @IsString()
-  @IsNotEmpty()
-  company: string;
-
-  @IsDateString()
-  @IsNotEmpty()
-  @Type(() => Date)
-  startDate: Date;
-
-  @IsOptional()
-  @IsDateString()
-  @Type(() => Date)
-  endDate?: Date;
-
-  @IsOptional()
-  @IsBoolean()
-  current?: boolean;
-}
+import { ExperienceDto } from './update-experience.dto';
 
 export class CreateUserDto {
   @IsString()

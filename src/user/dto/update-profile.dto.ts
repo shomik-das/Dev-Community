@@ -1,29 +1,6 @@
-import { IsString, IsOptional, IsArray, ValidateNested, IsBoolean, IsDateString, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-
-class ExperienceDto {
-  @IsString()
-  @IsNotEmpty()
-  title: string;
-
-  @IsString()
-  @IsNotEmpty()
-  company: string;
-
-  @IsDateString()
-  @IsNotEmpty()
-  @Type(() => Date)
-  startDate: Date;
-
-  @IsOptional()
-  @IsDateString()
-  @Type(() => Date)
-  endDate?: Date;
-
-  @IsOptional()
-  @IsBoolean()
-  current?: boolean;
-}
+import { ExperienceDto } from './update-experience.dto';
 
 export class UpdateProfileDto {
   @IsOptional()

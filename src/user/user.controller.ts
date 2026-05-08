@@ -2,6 +2,7 @@ import { Controller, Get, Patch, Post, Delete, Body, Request, UseGuards, Param }
 import { UserService } from './user.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateExperienceDto, ExperienceDto } from './dto/update-experience.dto';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard)
@@ -29,13 +30,13 @@ export class UserController {
   }
 
   @Post('experiences')
-  async addExperience(@Request() req, @Body() experience: any) {
+  async addExperience(@Request() req, @Body() experience: ExperienceDto) {
     return await this.userService.addExperience(req.user.id, experience);
   }
 
   @Patch('experiences/:expId')
-  async updateExperience(@Request() req, @Param('expId') expId: string, @Body() experience: any) {
-    return await this.userService.updateExperience(req.user.id, expId, experience);
+  async updateExperience(@Request() req, @Param('expId') expId: string, @Body() updateExperienceDto: UpdateExperienceDto,) {
+    return await this.userService.updateExperience(req.user.id, expId, updateExperienceDto);
   }
 
   @Delete('experiences/:expId')
