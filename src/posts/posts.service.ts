@@ -3,130 +3,35 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Types, Connection } from 'mongoose';
+import { Post, PostDocument } from './schemas/post.schema';
+import { Comment, CommentDocument } from 'src/comments/schemas/comment.schema';
+import { PostsRepository } from './posts.repository';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { Post, PostDocument } from './schemas/post.schema';
 
 @Injectable()
 export class PostsService {
   constructor(
-    @InjectModel(Post.name) private postModel: Model<PostDocument>,
+    private readonly postsRepository: PostsRepository,
+    @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
+  /** Creates a new post. */
   async create(createPostDto: CreatePostDto, userId: string): Promise<Post> {
-    const newPost = new this.postModel({...createPostDto, author: userId});
-    return await newPost.save();
+    return await this.postsRepository.create(createPostDto, userId);
   }
 
+  /** Retrieves all posts with author information and comment counts. */
   async findAll(): Promise<Post[]> {
-    return await this.postModel.aggregate([
-      // 1: Join with users collection to get author details
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'author',
-          foreignField: '_id',
-          as: 'author',
-        },
-      },
-      // 2: Flatten author array into a single object
-      {
-        $unwind: '$author',
-      },
-      // 3: Join with comments collection to get comment count
-      {
-        $lookup: {
-          from: 'comments',
-          localField: '_id',
-          foreignField: 'post',
-          as: 'comments',
-        },
-      },
-      // 4: Shape the final output — hide sensitive fields
-      {
-        $project: {
-          title: 1,
-          content: 1,
-          createdAt: 1,
-          'author._id': 1,
-          'author.name': 1,
-          'author.email': 1,
-          'author.avatarUrl': 1,
-          commentCount: { $size: '$comments' },
-        },
-      },
-      // 5: Newest first
-      {
-        $sort: { createdAt: -1 },
-      },
-    ]);
+    return await this.postsRepository.findAll();
   }
 
+  /** Retrieves a single post by its ID, including author and comments. */
   async findOne(id: string): Promise<Post> {
-    const result = await this.postModel.aggregate([
-      // 1: Match only the post we want
-      {
-        $match: { _id: new Types.ObjectId(id) },
-      },
-      // 2: Join author
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'author',
-          foreignField: '_id',
-          as: 'author',
-        },
-      },
-      {
-        $unwind: '$author',
-      },
-      // 3: Join comments with their authors nested inside
-      {
-        $lookup: {
-          from: 'comments',
-          localField: '_id',
-          foreignField: 'post',
-          pipeline: [
-            {
-              $lookup: {
-                from: 'users',
-                localField: 'author',
-                foreignField: '_id',
-                as: 'author',
-              },
-            },
-            { $unwind: '$author' },
-            {
-              $project: {
-                content: 1,
-                createdAt: 1,
-                'author._id': 1,
-                'author.name': 1,
-                'author.avatarUrl': 1,
-              },
-            },
-            { $sort: { createdAt: -1 } },
-          ],
-          as: 'comments',
-        },
-      },
-      // 4: Shape output
-      {
-        $project: {
-          title: 1,
-          content: 1,
-          createdAt: 1,
-          'author._id': 1,
-          'author.name': 1,
-          'author.email': 1,
-          'author.avatarUrl': 1,
-          comments: 1,
-          commentCount: { $size: '$comments' },
-        },
-      },
-    ]);
+    const result = await this.postsRepository.findOne(id);
 
     if (!result.length) {
       throw new NotFoundException(`Post with ID ${id} not found`);
@@ -135,8 +40,9 @@ export class PostsService {
     return result[0];
   }
 
+  /** Updates an existing post. */
   async update(id: string, updatePostDto: UpdatePostDto, userId: string): Promise<Post> {
-    const post = await this.postModel.findById(id);
+    const post = await this.postsRepository.findById(id);
     if (!post) {
       throw new NotFoundException(`Post with ID ${id} not found`);
     }
@@ -146,11 +52,12 @@ export class PostsService {
       throw new ForbiddenException('You can only edit your own posts');
     }
 
-    return (await this.postModel.findByIdAndUpdate(id, updatePostDto, { new: true }).exec()) as Post;
+    return (await this.postsRepository.update(id, updatePostDto)) as Post;
   }
 
+  /** Removes a post and all its associated comments. */
   async remove(id: string, userId: string): Promise<{ message: string }> {
-    const post = await this.postModel.findById(id);
+    const post = await this.postsRepository.findById(id);
     if (!post) {
       throw new NotFoundException(`Post with ID ${id} not found`);
     }
@@ -160,7 +67,23 @@ export class PostsService {
       throw new ForbiddenException('You can only delete your own posts');
     }
 
-    await this.postModel.findByIdAndDelete(id).exec();
-    return { message: 'Post deleted successfully' };
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      // 1: Delete the post
+      await this.postsRepository.delete(id, session);
+
+      // 2: Delete all comments associated with this post
+      await this.commentModel.deleteMany({ post: id } as any).session(session);
+
+      await session.commitTransaction();
+      return { message: 'Post and associated comments deleted successfully' };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 }

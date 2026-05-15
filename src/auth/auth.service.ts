@@ -14,6 +14,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  /** Registers a new user. */
   async signup(createUserDto: CreateUserDto) {
     const hash = await bcrypt.hash(createUserDto.password, 10);
     const newUser = await this.userService.createUser({
@@ -29,6 +30,7 @@ export class AuthService {
     };
   }
 
+  /** Authenticates a user. */
   async login(loginDto: LoginDto) {
     const user = await this.userService.findUserByEmail(loginDto.email);
     if (!user) {
@@ -55,12 +57,14 @@ export class AuthService {
     };
   }
 
+  /** Logs out a user by clearing their refresh token. */
   async logout(userId: string) {
     this.logger.log(`Logging out user ID: ${userId}`);
     await this.userService.updateRefreshToken(userId, null);
   }
 
 
+  /** Refreshes the access and refresh tokens using a valid refresh token. */
   async refreshTokens(userId: string, refreshToken: string) {
     const user = await this.userService.findUserById(userId);
     if (!user || !user.refreshToken) {
@@ -79,10 +83,12 @@ export class AuthService {
     return tokens;
   }
 
+  /** Updates the user's refresh token in the database. */
   private async updateRefreshToken(userId: string, refreshToken: string) {
     await this.userService.updateRefreshToken(userId, refreshToken);
   }
 
+  /** Generates new access and refresh tokens for a user. */
   private async getTokens(userId: string, role: string) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(

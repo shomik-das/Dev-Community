@@ -1,25 +1,19 @@
-import { ConflictException, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { User } from './schemas/user.schema';
-import { Role } from 'src/auth/enums/role.enum';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateExperienceDto, ExperienceDto } from './dto/update-experience.dto';
-import { Logger } from '@nestjs/common';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
+  /** Creates a new user in the database. */
   async createUser(createUserDto: CreateUserDto) {
     try {
-      const newUser = await this.userModel.create({
-        ...createUserDto,
-        role: Role.USER,
-      });
-      return newUser;
+      return await this.userRepository.create(createUserDto);
     } catch (error) {
       const DUPLICATE_KEY_ERROR = 11000;
       if (error.code === DUPLICATE_KEY_ERROR) {
@@ -34,74 +28,52 @@ export class UserService {
     }
   }
 
+  /** Finds a user by their email address. */
   async findUserByEmail(email: string) {
-    return await this.userModel.findOne({ email });
+    return await this.userRepository.findByEmail(email);
   }
 
+  /** Finds a user by their ID, excluding the password field. */
   async findUserById(id: string) {
-    return await this.userModel.findById(id).select('-password');
+    return await this.userRepository.findById(id);
   }
 
+  /** Updates a user's profile information. */
   async updateProfile(id: string, updateProfileDto: UpdateProfileDto) {
-    return await this.userModel
-      .findByIdAndUpdate(id, updateProfileDto, {
-        new: true,
-      })
-      .select('-password');
+    return await this.userRepository.updateProfile(id, updateProfileDto);
   }
 
+  /** Updates a user's refresh token. */
   async updateRefreshToken(id: string, refreshToken: string | null) {
-    await this.userModel.findByIdAndUpdate(id, { refreshToken });
+    await this.userRepository.updateRefreshToken(id, refreshToken);
   }
 
+  /** Adds a skill to a user's skill set. */
   async addSkill(id: string, skill: string) {
-    return await this.userModel
-      .findByIdAndUpdate(id, { $addToSet: { skills: skill } }, { new: true })
-      .select('-password');
+    return await this.userRepository.addSkill(id, skill);
   }
 
+  /** Removes a skill from a user's skill set. */
   async removeSkill(id: string, skill: string) {
-    return await this.userModel
-      .findByIdAndUpdate(id, { $pull: { skills: skill } }, { new: true })
-      .select('-password');
+    return await this.userRepository.removeSkill(id, skill);
   }
 
+  /** Adds a new experience entry to a user's profile. */
   async addExperience(id: string, experience: ExperienceDto) {
-    return await this.userModel
-      .findByIdAndUpdate(
-        id,
-        { $push: { experiences: experience } },
-        { new: true },
-      )
-      .select('-password');
+    return await this.userRepository.addExperience(id, experience);
   }
 
+  /** Updates an existing experience entry for a user. */
   async updateExperience(
     userId: string,
     expId: string,
     updateExperienceDto: UpdateExperienceDto,
   ) {
-    const updateFields = {};
-    Object.keys(updateExperienceDto).forEach((key) => {
-      updateFields[`experiences.$.${key}`] = updateExperienceDto[key];
-    });
-
-    return await this.userModel
-      .findOneAndUpdate(
-        { _id: userId, 'experiences._id': expId },
-        { $set: updateFields },
-        { new: true },
-      )
-      .select('-password');
+    return await this.userRepository.updateExperience(userId, expId, updateExperienceDto);
   }
 
+  /** Removes an experience entry from a user's profile. */
   async removeExperience(userId: string, expId: string) {
-    return await this.userModel
-      .findByIdAndUpdate(
-        userId,
-        { $pull: { experiences: { _id: expId } } },
-        { new: true },
-      )
-      .select('-password');
+    return await this.userRepository.removeExperience(userId, expId);
   }
 }
