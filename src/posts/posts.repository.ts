@@ -32,14 +32,6 @@ export class PostsRepository {
         $unwind: '$author',
       },
       {
-        $lookup: {
-          from: 'comments',
-          localField: '_id',
-          foreignField: 'post',
-          as: 'comments',
-        },
-      },
-      {
         $project: {
           _id: 1,
           title: 1,
@@ -49,7 +41,7 @@ export class PostsRepository {
           'author.name': 1,
           'author.email': 1,
           'author.avatarUrl': 1,
-          commentCount: { $size: '$comments' },
+          commentCount: 1,
         },
       },
       {
@@ -115,7 +107,7 @@ export class PostsRepository {
           'author.email': 1,
           'author.avatarUrl': 1,
           comments: 1,
-          commentCount: { $size: '$comments' },
+          commentCount: 1,
         },
       },
     ]);

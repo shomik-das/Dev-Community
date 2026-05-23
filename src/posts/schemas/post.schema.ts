@@ -14,6 +14,9 @@ export class Post {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   author: User;
+
+  @Prop({ default: 0 })
+  commentCount: number;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

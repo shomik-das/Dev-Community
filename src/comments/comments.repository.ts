@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, ClientSession } from 'mongoose';
 import { Comment, CommentDocument } from './schemas/comment.schema';
+import { Post, PostDocument } from 'src/posts/schemas/post.schema';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 
@@ -9,17 +10,29 @@ import { UpdateCommentDto } from './dto/update-comment.dto';
 export class CommentsRepository {
   constructor(
     @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
-  ) {}
+    @InjectModel(Post.name) private postModel: Model<PostDocument>,
+  ) { }
 
-  /** Creates a new comment. */
+  /** Creates a new comment and increments the post's stored commentCount atomically. */
   async create(createCommentDto: CreateCommentDto, userId: string): Promise<CommentDocument> {
     const { postId, content } = createCommentDto;
-    const newComment = new this.commentModel({
-      content,
-      author: userId,
-      post: postId,
-    });
-    return await newComment.save();
+    const session: ClientSession = await this.commentModel.db.startSession()
+    session.startTransaction()
+    try {
+      const comment = await new this.commentModel({ content, author: userId, post: postId }).save({ session })
+      await this.postModel.updateOne(
+        { _id: new Types.ObjectId(postId) },
+        { $inc: { commentCount: 1 } },
+        { session },
+      )
+      await session.commitTransaction()
+      return comment
+    } catch (err) {
+      await session.abortTransaction()
+      throw new InternalServerErrorException(err)
+    } finally {
+      await session.endSession()
+    }
   }
 
   /** Retrieves all comments for a specific post. */
