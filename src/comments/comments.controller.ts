@@ -19,6 +19,11 @@ export class CommentsController {
     return await this.commentsService.findByPost(postId);
   }
 
+  @Get(':id/replies')
+  async findReplies(@Param('id') parentId: string) {
+    return await this.commentsService.findReplies(parentId);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateCommentDto: UpdateCommentDto, @Request() req) {

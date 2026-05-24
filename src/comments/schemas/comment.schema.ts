@@ -15,7 +15,14 @@ export class Comment {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Post', required: true })
   post: Post;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Comment', default: null })
+  parent: Comment | null;
+
+  @Prop({ default: 0 })
+  replyCount: number;
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);
-CommentSchema.index({ post: 1, createdAt: -1 });
+CommentSchema.index({ post: 1, parent: 1, createdAt: -1 });
+CommentSchema.index({ parent: 1, createdAt: -1 });

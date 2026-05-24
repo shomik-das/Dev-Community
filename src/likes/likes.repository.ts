@@ -16,6 +16,11 @@ export class LikesRepository {
     const session: ClientSession = await this.likeModel.db.startSession()
     session.startTransaction()
     try {
+      // const existingLike = await this.likeModel.findOne({ post: postId, user: userId }).session(session);
+      // if (existingLike) {
+      //   throw new ConflictException('You have already liked this post');
+      // }
+      // Race Conditions
       const like = await new this.likeModel(
         { post: new Types.ObjectId(postId), user: new Types.ObjectId(userId) },
       ).save({ session })
@@ -29,6 +34,7 @@ export class LikesRepository {
     } catch (err) {
       await session.abortTransaction()
       // Mongo duplicate key error code
+      // MongoDB atomically guarantees that only one combination of (user, post) can ever exist in the collection.
       if (err?.code === 11000) {
         throw new ConflictException('You have already liked this post')
       }
@@ -37,6 +43,16 @@ export class LikesRepository {
       await session.endSession()
     }
   }
+
+// If a user double-clicks the "Like" button very quickly, two separate requests can hit the server at the exact same millisecond:
+
+// Request 1 checks: Does a like exist? -> No.
+// Request 2 checks: Does a like exist? -> No.
+// Request 1 inserts the like and increments the count.
+// Request 2 inserts the duplicate like and increments the count again.
+// Result: The post gets liked twice by the same user, and the likeCount is incremented twice (+2)!
+
+  
 
   /** Removes a like from a post and decrements the post's stored likeCount atomically. */
   async removeLike(postId: string, userId: string): Promise<void> {

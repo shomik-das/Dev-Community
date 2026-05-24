@@ -31,6 +31,15 @@ export class CommentsService {
     return await this.commentsRepository.findByPost(postId);
   }
 
+  /** Retrieves all replies for a parent comment. */
+  async findReplies(parentId: string): Promise<Comment[]> {
+    const parentComment = await this.commentsRepository.findById(parentId);
+    if (!parentComment) {
+      throw new NotFoundException(`Parent comment with ID ${parentId} not found`);
+    }
+    return await this.commentsRepository.findReplies(parentId);
+  }
+
   /** Updates an existing comment. */
   async update(id: string, updateCommentDto: UpdateCommentDto, userId: string): Promise<Comment> {
     const comment = await this.commentsRepository.findById(id);
