@@ -4,11 +4,15 @@ import { LikesService } from './likes.service'
 import { LikesController } from './likes.controller'
 import { LikesRepository } from './likes.repository'
 import { Like, LikeSchema } from './schemas/like.schema'
+import { Post, PostSchema } from 'src/posts/schemas/post.schema'
 import { PostsModule } from 'src/posts/posts.module'
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Like.name, schema: LikeSchema }]),
+    MongooseModule.forFeature([
+      { name: Like.name, schema: LikeSchema },
+      { name: Post.name, schema: PostSchema },
+    ]),
     PostsModule,
   ],
   controllers: [LikesController],
