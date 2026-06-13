@@ -1,34 +1,37 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
 import { SnippetsService } from './snippets.service';
 import { CreateSnippetDto } from './dto/create-snippet.dto';
 import { UpdateSnippetDto } from './dto/update-snippet.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
-@Controller('snippets')
+@Controller('companies/:companyId/snippets')
+@UseGuards(JwtAuthGuard)
 export class SnippetsController {
   constructor(private readonly snippetsService: SnippetsService) {}
 
   @Post()
-  create(@Body() createSnippetDto: CreateSnippetDto) {
-    return this.snippetsService.create(createSnippetDto);
+  create(@Request() req,@Param('companyId') companyId: string,@Body() createSnippetDto: CreateSnippetDto,) {
+    return this.snippetsService.create(companyId, createSnippetDto, req.user.id);
   }
 
   @Get()
-  findAll() {
-    return this.snippetsService.findAll();
+  findAll(@Param('companyId') companyId: string) {
+    return this.snippetsService.findAll(companyId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.snippetsService.findOne(+id);
+  @Get(':snippetId')
+  findOne(@Param('companyId') companyId: string, @Param('snippetId') snippetId: string) {
+    return this.snippetsService.findOne(companyId, snippetId);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSnippetDto: UpdateSnippetDto) {
-    return this.snippetsService.update(+id, updateSnippetDto);
+  @Patch(':snippetId')
+  update(@Request() req,@Param('companyId') companyId: string,@Param('snippetId') snippetId: string,@Body() updateSnippetDto: UpdateSnippetDto,) {
+    return this.snippetsService.update(companyId, snippetId, updateSnippetDto, req.user.id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.snippetsService.remove(+id);
+  @Delete(':snippetId')
+  remove(@Param('companyId') companyId: string, @Param('snippetId') snippetId: string) {
+    return this.snippetsService.remove(companyId, snippetId);
   }
 }
+
