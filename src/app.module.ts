@@ -10,6 +10,7 @@ import { CommentsModule } from './comments/comments.module';
 import { PostsModule } from './posts/posts.module';
 import { LikesModule } from './likes/likes.module';
 import { SnippetsModule } from './snippets/snippets.module';
+import { FormsModule } from './forms/forms.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { SnippetsModule } from './snippets/snippets.module';
     PostsModule,
     LikesModule,
     SnippetsModule,
+    FormsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
