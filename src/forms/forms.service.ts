@@ -5,6 +5,7 @@ import { FormRecord } from './entities/form-record.entity';
 import { CreateFormDto } from './dto/create-form.dto';
 import { CreateRecordDto } from './dto/create-record.dto';
 import { UpdateRecordDto } from './dto/update-record.dto';
+import { UpdateFormDto } from './dto/update-form.dto';
 import { FormsRepository } from './forms.repository';
 import { toSnakeCase } from './helpers/string.helper';
 import { validateFieldFormats } from './helpers/validation.helper';
@@ -63,6 +64,106 @@ export class FormsService {
       // Attach fields to form object to return
       savedForm.fields = formFields;
       return savedForm;
+    });
+  }
+
+  // update form, title, and its fields (add, update, delete)
+  async update(companyId: string, formId: string, updateFormDto: UpdateFormDto): Promise<Form> {
+    // verify form exists
+    const form = await this.findOne(companyId, formId);
+
+    const { title, fields } = updateFormDto;
+
+    return await this.formsRepository.getDataSource().transaction(async (manager) => {
+      // update title if provided
+      if (title !== undefined) {
+        form.title = title;
+        await manager.save(Form, form);
+      }
+
+      // update fields if provided
+      if (fields !== undefined) {
+        const existingFields = form.fields;
+        const existingFieldsMap = new Map(existingFields.map(f => [f.id, f]));
+
+        // fields to delete
+        const incomingFieldIds = new Set(fields.map(f => f.id).filter(id => !!id));
+        const fieldsToDelete = existingFields.filter(f => !incomingFieldIds.has(f.id));
+
+        if (fieldsToDelete.length > 0) {
+          await manager.delete(FormField, fieldsToDelete.map(f => f.id));
+        }
+
+        // update or insert
+        const fieldsToSave: FormField[] = [];
+        const fieldKeys = new Set<string>();
+
+        // First add all existing fields that are NOT deleted to fieldKeys set to prevent collisions
+        for (const existingField of existingFields) {
+          if (incomingFieldIds.has(existingField.id)) {
+            fieldKeys.add(existingField.field_key);
+          }
+        }
+
+        // process each incoming field
+        for (let idx = 0; idx < fields.length; idx++) {
+          const fieldDto = fields[idx];
+          const position = fieldDto.position !== undefined ? fieldDto.position : idx;
+
+          if (fieldDto.id) {
+            // update existing field
+            const existingField = existingFieldsMap.get(fieldDto.id);
+            if (!existingField || existingField.form_id !== formId) {
+              throw new BadRequestException(`Field with ID ${fieldDto.id} does not belong to this form`);
+            }
+
+            if (fieldDto.label !== undefined) {
+              existingField.label = fieldDto.label;
+            }
+            if (fieldDto.field_type !== undefined) {
+              existingField.field_type = fieldDto.field_type;
+            }
+            if (fieldDto.is_required !== undefined) {
+              existingField.is_required = fieldDto.is_required;
+            }
+            if (fieldDto.placeholder !== undefined) {
+              existingField.placeholder = fieldDto.placeholder || null;
+            }
+            existingField.position = position;
+
+            fieldsToSave.push(existingField);
+          } else {
+            // new field -> generate key
+            if (!fieldDto.label || !fieldDto.field_type) {
+              throw new BadRequestException(`New fields must have a label and field_type`);
+            }
+            const fieldKey = toSnakeCase(fieldDto.label);
+            if (fieldKeys.has(fieldKey)) {
+              throw new BadRequestException(`Duplicate field key generated from label: "${fieldDto.label}" -> "${fieldKey}"`);
+            }
+            fieldKeys.add(fieldKey);
+
+            const newField = manager.create(FormField, {
+              form_id: formId,
+              company_id: companyId,
+              label: fieldDto.label,
+              field_key: fieldKey,
+              field_type: fieldDto.field_type,
+              is_required: fieldDto.is_required ? true : false,
+              placeholder: fieldDto.placeholder || null,
+              position: position,
+            });
+            fieldsToSave.push(newField);
+          }
+        }
+
+        if (fieldsToSave.length > 0) {
+          await manager.save(FormField, fieldsToSave); // it looks for the primary key (id) if no id then it will insert and if there is id then it will update 
+        }
+      }
+
+      // Fetch fresh form after update
+      return await this.findOne(companyId, formId);
     });
   }
 

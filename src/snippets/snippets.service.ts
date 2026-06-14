@@ -104,7 +104,12 @@ export class SnippetsService {
       snippet.status = SnippetStatus.QUEUED;
     }
 
-    // 7. Update the last update
+    // 5. If status is provided
+    if (status !== undefined) {
+      snippet.status = status;
+    }
+
+    // 6. Update the last update
     snippet.updated_by = userId;
 
     return await this.snippetsRepository.save(snippet);

@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { FormsService } from './forms.service';
 import { CreateFormDto } from './dto/create-form.dto';
+import { UpdateFormDto } from './dto/update-form.dto';
 import { CreateRecordDto } from './dto/create-record.dto';
 import { UpdateRecordDto } from './dto/update-record.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
@@ -24,6 +25,12 @@ export class FormsController {
   findOne(@Param('companyId') companyId: string, @Param('formId') formId: string) {
     return this.formsService.findOne(companyId, formId);
   }
+
+  @Patch(':formId')
+  update(@Param('companyId') companyId: string, @Param('formId') formId: string, @Body() updateFormDto: UpdateFormDto) {
+    return this.formsService.update(companyId, formId, updateFormDto);
+  }
+
 
   @Delete(':formId')
   remove(@Param('companyId') companyId: string, @Param('formId') formId: string) {
